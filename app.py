@@ -9,9 +9,10 @@ from data import (
     fetch_quotes,
     search_stock,
 )
+from i18n import LANGUAGES, sector_display_html, sector_page_title, t
 from sectors import SECTOR_NAME, SECTOR_STOCKS, SECTORS
 
-st.set_page_config(page_title="美股板块资金流", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Sector Flow", page_icon="📊", layout="wide")
 
 st.markdown(
     """
@@ -271,15 +272,15 @@ def _ind_row(label: str, val: str, cls: str) -> str:
 
 
 INDICATOR_ROWS = [
-    ("涨跌幅",     "price_change", "pct"),
-    ("CMF",       "cmf",          "pct"),
-    ("Net $Flow", "net_flow",     "dollar"),
-    ("Flow %",    "flow_ratio",   "pct"),
-    ("Up/Dn Vol", "ud_vol",       "ratio"),
-    ("RVOL",      "rvol",         "ratio"),
-    ("Close Loc", "close_loc",    "clv"),
-    ("MFI",       "mfi",          "mfi"),
-    ("OBV Δ%",    "obv_pct",      "pct"),
+    ("ind_price_change", "price_change", "pct"),
+    ("ind_cmf",          "cmf",          "pct"),
+    ("ind_net_flow",     "net_flow",     "dollar"),
+    ("ind_flow_ratio",   "flow_ratio",   "pct"),
+    ("ind_ud_vol",       "ud_vol",       "ratio"),
+    ("ind_rvol",         "rvol",         "ratio"),
+    ("ind_close_loc",    "close_loc",    "clv"),
+    ("ind_mfi",          "mfi",          "mfi"),
+    ("ind_obv",          "obv_pct",      "pct"),
 ]
 
 PERIODS = (1, 5, 20)
@@ -312,12 +313,12 @@ def render_metrics_table_html(metrics: dict | None, live_change_1d: float | None
         return ""
     parts = ['<div class="mtbl">']
     parts.append(
-        '<div class="row">'
-        '<div class="head lbl">指标</div>'
-        '<div class="head">1D</div><div class="head">5D</div><div class="head">20D</div>'
-        '</div>'
+        f'<div class="row">'
+        f'<div class="head lbl">{t("tbl_header_indicator")}</div>'
+        f'<div class="head">1D</div><div class="head">5D</div><div class="head">20D</div>'
+        f'</div>'
     )
-    for label, key, kind in INDICATOR_ROWS:
+    for label_key, key, kind in INDICATOR_ROWS:
         vals = metrics.get(key) or {}
         if not isinstance(vals, dict):
             vals = {}
@@ -327,7 +328,7 @@ def render_metrics_table_html(metrics: dict | None, live_change_1d: float | None
             if key == "price_change" and p == 1 and live_change_1d is not None:
                 v = live_change_1d
             cells.append(_metric_cell(v, kind))
-        parts.append(f'<div class="row"><div class="lbl">{label}</div>{"".join(cells)}</div>')
+        parts.append(f'<div class="row"><div class="lbl">{t(label_key)}</div>{"".join(cells)}</div>')
     parts.append('</div>')
     return "".join(parts)
 
@@ -371,44 +372,45 @@ def render_search_result(r: dict) -> str:
       </div>
       {table_html}
       <div class="foot">
-        <div>市值:{mcap}</div>
-        <div>数据源:Finnhub + yfinance · 绿=资金流入/上涨 · 红=流出/下跌</div>
+        <div>{t("market_cap_full")}: {mcap}</div>
+        <div>{t("sources_footer")}</div>
       </div>
     </div>
     """
 
 
 def render_main():
-    st.title("📊 美股板块资金流")
+    st.title(t("app_title"))
 
     with st.sidebar:
-        st.subheader("设置")
-        refresh_sec = st.slider("刷新间隔(秒)", 5, 60, 15, step=5)
-        st.caption("CMF 窗口:1D / 5D / 20D")
-        st.caption("数据源:Finnhub(实时报价)+ yfinance(历史 K 线)")
+        st.subheader(t("settings"))
+        refresh_sec = st.slider(t("refresh_interval"), 5, 60, 15, step=5)
+        st.caption(t("cmf_windows_note"))
+        st.caption(t("data_source_note"))
         st.markdown("---")
         st.markdown(
-            '<div class="legend">🟢 绿 = 资金流入 / 上涨<br>🔴 红 = 资金流出 / 下跌<br>颜色深浅 ~ 幅度大小<br><br>💡 点击板块卡片查看个股</div>',
+            f'<div class="legend">{t("legend_main")}</div>',
             unsafe_allow_html=True,
         )
 
-    # 顶部搜索
+    # Top-of-page ticker search
     sc1, sc2 = st.columns([5, 1])
     with sc1:
         ticker = st.text_input(
-            "股票代码",
-            placeholder="🔍  输入股票代码回车搜索,如 AAPL / NVDA / TSLA",
+            t("search_input_label"),
+            placeholder=t("search_placeholder"),
             label_visibility="collapsed",
             key="search_ticker",
         )
     with sc2:
-        st.button("搜索", use_container_width=True, key="search_btn")
+        st.button(t("search_btn"), use_container_width=True, key="search_btn")
 
     if ticker and ticker.strip():
-        with st.spinner(f"搜索 {ticker.strip().upper()}…"):
+        sym_up = ticker.strip().upper()
+        with st.spinner(t("search_spinner", sym=sym_up)):
             result = search_stock(ticker.strip())
         if result is None:
-            st.warning(f"未找到 **{ticker.strip().upper()}** 的数据,请检查代码是否正确。")
+            st.warning(t("search_not_found", sym=sym_up))
         else:
             st.markdown(render_search_result(result), unsafe_allow_html=True)
 
@@ -436,12 +438,13 @@ def render_main():
             bg = color_for(change_pct)
             price_html = f"${q.price:,.2f}" if q else "—"
             table_html = render_metrics_table_html(metrics, live_change_1d=change_pct)
+            name_html = sector_display_html(name_en, name_cn)
 
             card = f"""
             <a class="card" href="?sector={sym}" target="_self" style="background:{bg};">
               <div>
                 <div class="sym">{sym} · {price_html}</div>
-                <div class="name">{name_cn} <span style="opacity:.7;font-weight:500;font-size:13px;">{name_en}</span></div>
+                <div class="name">{name_html}</div>
               </div>
               {table_html}
             </a>
@@ -450,7 +453,7 @@ def render_main():
                 st.markdown(card, unsafe_allow_html=True)
                 st.write("")
 
-        st.caption(f"最后更新:{datetime.now().strftime('%H:%M:%S')}  ·  每 {refresh_sec}s 静默刷新")
+        st.caption(t("last_update", time=datetime.now().strftime('%H:%M:%S'), sec=refresh_sec))
 
     sector_grid()
 
@@ -481,7 +484,7 @@ def render_stock_card(sym: str, quote, profile, metrics: dict | None):
         <div class="sym">{sym}</div>
         <div class="price">{price}</div>
       </div>
-      <div class="name">{name} · <span style="opacity:.75;font-weight:500;">市值 {mcap}</span></div>
+      <div class="name">{name} · <span style="opacity:.75;font-weight:500;">{t("market_cap_short")} {mcap}</span></div>
       {table_html}
     </div>
     """
@@ -492,37 +495,38 @@ def render_detail(sector_code: str):
 
     top_col1, top_col2 = st.columns([1, 5])
     with top_col1:
-        if st.button("← 返回主页", use_container_width=True, key="back_btn"):
+        if st.button(t("back_home"), use_container_width=True, key="back_btn"):
             st.query_params.clear()
             st.rerun()
     with top_col2:
-        st.title(f"{sector_code} · {name_cn} {name_en}")
+        st.title(sector_page_title(sector_code, name_en, name_cn))
 
     stocks = SECTOR_STOCKS.get(sector_code, [])
     if not stocks:
-        st.warning(f"未配置 {sector_code} 的成分股列表")
+        st.warning(t("no_constituents", code=sector_code))
         return
 
     with st.sidebar:
-        if st.button("← 返回主页", use_container_width=True, key="back_btn_sidebar"):
+        if st.button(t("back_home"), use_container_width=True, key="back_btn_sidebar"):
             st.query_params.clear()
             st.rerun()
         st.markdown("---")
-        st.subheader("设置")
-        refresh_sec = st.slider("刷新间隔(秒)", 5, 60, 15, step=5, key="ref_detail")
-        st.caption(f"候选池:{len(stocks)} 只主要成分股")
+        st.subheader(t("settings"))
+        refresh_sec = st.slider(t("refresh_interval"), 5, 60, 15, step=5, key="ref_detail")
+        st.caption(t("candidate_pool", n=len(stocks)))
         st.markdown("---")
         st.markdown(
-            '<div class="legend">🟢 绿 = 资金流入 / 上涨<br>🔴 红 = 资金流出 / 下跌</div>',
+            f'<div class="legend">{t("legend_detail")}</div>',
             unsafe_allow_html=True,
         )
 
     @st.fragment(run_every=f"{refresh_sec}s")
     def detail_grid():
-        symbols = tuple(stocks)
-        quotes = fetch_quotes(symbols)
-        profiles = fetch_profiles(symbols)
-        metrics_map = fetch_metrics_map(symbols)
+        with st.spinner(t("fetching_stocks", n=len(stocks))):
+            symbols = tuple(stocks)
+            quotes = fetch_quotes(symbols)
+            profiles = fetch_profiles(symbols)
+            metrics_map = fetch_metrics_map(symbols)
 
         universe = []
         for s in stocks:
@@ -544,10 +548,10 @@ def render_detail(sector_code: str):
             })
 
         if not universe:
-            st.error("没有拿到任何股票数据,请稍后再试")
+            st.error(t("no_stocks_data"))
             return
 
-        st.markdown('<div class="section-title">💰 市值最大 Top 10</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="section-title">{t("sec_mcap")}</div>', unsafe_allow_html=True)
         top_mcap = sorted(universe, key=lambda x: x["mcap"], reverse=True)[:10]
         cols = st.columns(5, gap="small")
         for i, item in enumerate(top_mcap):
@@ -562,14 +566,14 @@ def render_detail(sector_code: str):
         left, right = st.columns(2, gap="medium")
 
         with left:
-            st.markdown('<div class="section-title">🌊 资金流最剧烈 Top 10(|Net $Flow 20D|)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">{t("sec_flow")}</div>', unsafe_allow_html=True)
             top_cmf = sorted(
                 [x for x in universe if (x["metrics"].get("net_flow") or {}).get(20) is not None],
                 key=lambda x: abs((x["metrics"].get("net_flow") or {}).get(20) or 0),
                 reverse=True,
             )[:10]
             if not top_cmf:
-                st.info("Net Flow 数据加载中…")
+                st.info(t("loading_net_flow"))
             else:
                 sub_cols = st.columns(2, gap="small")
                 for i, item in enumerate(top_cmf):
@@ -580,14 +584,14 @@ def render_detail(sector_code: str):
                         )
 
         with right:
-            st.markdown('<div class="section-title">⚡ 涨跌幅最大 Top 10(|%|)</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="section-title">{t("sec_movers")}</div>', unsafe_allow_html=True)
             top_change = sorted(
                 [x for x in universe if x["quote"] is not None],
                 key=lambda x: abs(x["change_pct"]),
                 reverse=True,
             )[:10]
             if not top_change:
-                st.info("报价数据加载中…")
+                st.info(t("loading_quotes"))
             else:
                 sub_cols = st.columns(2, gap="small")
                 for i, item in enumerate(top_change):
@@ -597,14 +601,25 @@ def render_detail(sector_code: str):
                             unsafe_allow_html=True,
                         )
 
-        st.caption(f"最后更新:{datetime.now().strftime('%H:%M:%S')}  ·  每 {refresh_sec}s 静默刷新")
+        st.caption(t("last_update", time=datetime.now().strftime('%H:%M:%S'), sec=refresh_sec))
 
     detail_grid()
 
 
-# 路由
+# Language selector — always at the very top of the sidebar
+with st.sidebar:
+    st.selectbox(
+        t("language_label"),
+        options=list(LANGUAGES.keys()),
+        format_func=lambda code: LANGUAGES[code],
+        index=0,
+        key="lang",
+    )
+    st.markdown("---")
+
+# Routing
 if not FINNHUB_API_KEY:
-    st.error("未检测到 FINNHUB_API_KEY,请在项目根目录的 `.env` 文件中配置。")
+    st.error(t("api_key_missing"))
     st.stop()
 
 params = st.query_params
