@@ -1,5 +1,12 @@
-# Sector Flow
+# 📊 Sector Flow
 
+[![Category: Finance & Data Visualization](https://img.shields.io/badge/Category-Finance%20%26%20Data%20Visualization-1E90FF)](https://github.com/czcode0501)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
+[![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-ff4b4b.svg)](https://streamlit.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+> **分类：📊 金融 & 数据可视化** — 本项目属于 `金融 / 数据可视化` 类别。
+>
 > **Real-time US stock sector money-flow dashboard, self-hosted and open source.**
 
 A dark-mode Streamlit app that tracks buy/sell pressure across all 11 SPDR sector ETFs and their top holdings — 9 professional indicators computed at 3 time windows each (1-day / 5-day / 20-day), silently auto-refreshed, with flip-clock number animations.
@@ -9,6 +16,12 @@ A dark-mode Streamlit app that tracks buy/sell pressure across all 11 SPDR secto
 ![Streamlit](https://img.shields.io/badge/Built%20with-Streamlit-ff4b4b.svg)
 
 ---
+
+## 📂 Project Classification
+
+| Category | Description |
+|----------|-------------|
+| 📊 **Finance & Data Visualization** | Real-time US stock sector money-flow dashboard with 9 professional indicators |
 
 ## 📸 Screenshots
 
