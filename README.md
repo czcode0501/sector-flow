@@ -67,10 +67,10 @@ Every card shows a compact 9-row × 3-column table. Rows are indicators; columns
 | **Net $Flow** | Net directional dollar volume — proxy for aggressive buy − aggressive sell | `Σ(MFM × Volume × TypicalPrice)` | +/− vs zero |
 | **Flow %** | Same as Net $Flow but normalized so sectors of different size are comparable | `NetDollarFlow / Σ(Volume × TypicalPrice)` | +/− vs zero |
 | **Up/Dn Vol** | Ratio of up-day volume to down-day volume over *N* days | `Σ Volume(close↑) / Σ Volume(close↓)` | >1 = green |
-| **RVOL** | Today's volume vs. its N-day average — is this an above-average day? | `Volume_today / mean(Volume_{−N…−1})` | >1 = green |
+| **RVOL** | Today's volume vs. its N-day average — is this an above-average day? Intraday, the average is pro-rated by the elapsed share of the session | `Volume_today / (mean(Volume_{−N…−1}) × elapsed)` | >1 = green |
 | **Close Loc** | Where the close landed inside the day's H-L range, averaged over *N* days | `mean( (Close − Low) / (High − Low) )` | >0.5 = green |
 | **MFI** | Money Flow Index — like RSI but weighted by dollar volume | `100 − 100/(1 + posMoneyFlow/negMoneyFlow)` over *N* periods | >50 = green |
-| **OBV Δ%** | On-Balance Volume % change over *N* periods | `(OBV_today − OBV_{−N}) / |OBV_{−N}|` | +/− vs zero |
+| **OBV Net %** | Net On-Balance Volume over *N* days as a share of total volume (bounded ±100 %) | `Σ(sign(ΔClose) × Volume) / Σ Volume` | +/− vs zero |
 
 **Time windows**: 1D (today only), 5D (~one trading week), 20D (~one trading month).
 
@@ -119,7 +119,16 @@ Open `.env` in any text editor and paste your Finnhub key after `FINNHUB_API_KEY
 python -m streamlit run app.py
 ```
 
-Open **http://localhost:8501** in your browser.
+Open **http://127.0.0.1:8501** in your browser.
+
+> 🔒 `.streamlit/config.toml` binds the server to `127.0.0.1`. The app has no login and every visitor spends your Finnhub quota, so only expose it on a network behind your own authentication.
+
+Run the offline test suite (no network or API key needed):
+
+```bash
+pip install pytest
+python -m pytest -q tests
+```
 
 ### Windows: one-click launcher
 
@@ -152,7 +161,9 @@ Finnhub free tier is **60 calls/min**. `429 Too Many Requests` is a per-minute c
 | Main dashboard (11 sector quotes) | ~44 | ✅ safe |
 | Sector detail (~30 stock quotes) | ~120 | ⚠️ may hit 429 |
 
-**Mitigations if 429 bothers you:**
+The app now has a built-in process-wide limiter (default **55 calls/min**, override with `FINNHUB_CALLS_PER_MIN` in `.env`). Requests over the budget are not sent; the last good quote stays on screen and the symbol is refreshed on a later tick. A real 429 pauses all Finnhub calls for the `Retry-After` period. Failed lookups are retried after minutes, not cached for the full TTL.
+
+**Mitigations if refreshes feel slow on the sector page:**
 1. Raise sector detail refresh to **30 s** (sidebar slider) → 60 calls/min → safe
 2. Thin the constituent lists in `sectors.py` from 30 to ~20 tickers
 3. Upgrade Finnhub (paid tier removes the cap)
@@ -239,10 +250,10 @@ MIT — see [LICENSE](LICENSE). Do whatever you want, just keep the copyright no
 | **Net $Flow** | 净方向性成交金额 —— 主动买 − 主动卖 的估算 | `Σ(MFM × 成交量 × 典型价)` | 正=绿 |
 | **Flow %** | 净流入 ÷ 总成交金额(消除板块规模差) | `NetDollarFlow / Σ(成交量 × 典型价)` | 正=绿 |
 | **Up/Dn Vol** | N 天内上涨日成交量 ÷ 下跌日成交量 | `Σ 涨日成交量 / Σ 跌日成交量` | >1=绿 |
-| **RVOL** | 今日成交量 ÷ N 日均量 —— 是否放量 | `今日量 / mean(近 N 日量)` | >1=绿 |
+| **RVOL** | 今日成交量 ÷ N 日均量 —— 是否放量;盘中按已过交易时段比例折算均量 | `今日量 / (mean(近 N 日量) × 已过时段占比)` | >1=绿 |
 | **Close Loc** | 收盘价在当日 H-L 区间的位置,N 日平均 | `mean( (Close − Low) / (High − Low) )` | >0.5=绿 |
 | **MFI** | 资金流量指标 —— 加权成交金额版的 RSI | `100 − 100/(1 + 正MFV/负MFV)` 累计 N 期 | >50=绿 |
-| **OBV Δ%** | On-Balance Volume 累计 N 期变化 % | `(OBV_今 − OBV_{-N}) / |OBV_{-N}|` | 正=绿 |
+| **OBV Net %** | N 日净 OBV 占总成交量的比例(范围 ±100%) | `Σ(sign(ΔClose) × Volume) / Σ Volume` | 正=绿 |
 
 **时间窗口**:1D = 只看今天;5D ≈ 一个交易周;20D ≈ 一个交易月。
 
@@ -291,7 +302,7 @@ cp .env.example .env
 python -m streamlit run app.py
 ```
 
-浏览器打开 **http://localhost:8501**
+浏览器打开 **http://127.0.0.1:8501**(`.streamlit/config.toml` 只监听本机;本应用没有登录,别直接暴露到局域网/公网)
 
 ### Windows 一键启动
 

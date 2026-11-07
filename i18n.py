@@ -1,4 +1,6 @@
 """Tiny i18n helper. English is the default; Chinese is the alternate."""
+from html import escape
+
 import streamlit as st
 
 LANGUAGES = {"en": "English", "zh": "中文"}
@@ -31,10 +33,12 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "search_btn": "Search",
         "search_spinner": "Searching {sym}…",
         "search_not_found": "No data found for **{sym}** — check the ticker.",
+        "search_invalid": "That does not look like a US ticker (letters/digits, optional .B / -B class suffix).",
         # Fragments
         "loading_data": "Loading data…",
         "fetching_stocks": "Fetching {n} stocks…",
         "no_stocks_data": "No data yet — try again in a moment.",
+        "missing_symbols": "No data yet for: {syms} (retrying automatically; persistent gaps usually mean a delisted ticker in sectors.py)",
         "no_constituents": "No constituent list configured for {code}",
         "loading_net_flow": "Loading Net $Flow…",
         "loading_quotes": "Loading quotes…",
@@ -58,7 +62,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ind_rvol": "RVOL",
         "ind_close_loc": "Close Loc",
         "ind_mfi": "MFI",
-        "ind_obv": "OBV Δ%",
+        "ind_obv": "OBV Net %",
         # Sector names (English is authoritative already)
     },
     "zh": {
@@ -85,9 +89,11 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "search_btn": "搜索",
         "search_spinner": "搜索 {sym}…",
         "search_not_found": "未找到 **{sym}** 的数据,请检查代码是否正确。",
+        "search_invalid": "输入的不是有效的美股代码(字母/数字,可带 .B / -B 类别后缀)。",
         "loading_data": "数据加载中…",
         "fetching_stocks": "拉取 {n} 只股票数据…",
         "no_stocks_data": "没有拿到任何股票数据,请稍后再试",
+        "missing_symbols": "暂无数据:{syms}(会自动重试;长期缺失通常表示 sectors.py 中的代码已退市)",
         "no_constituents": "未配置 {code} 的成分股列表",
         "loading_net_flow": "Net $Flow 数据加载中…",
         "loading_quotes": "报价数据加载中…",
@@ -108,7 +114,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "ind_rvol": "RVOL",
         "ind_close_loc": "Close Loc",
         "ind_mfi": "MFI",
-        "ind_obv": "OBV Δ%",
+        "ind_obv": "OBV Net %",
     },
 }
 
@@ -128,8 +134,8 @@ def t(key: str, **fmt) -> str:
 def sector_display_html(name_en: str, name_cn: str) -> str:
     """Sector card title. English mode shows only English name; Chinese mode shows both."""
     if get_lang() == "zh":
-        return f'{name_cn} <span style="opacity:.7;font-weight:500;font-size:13px;">{name_en}</span>'
-    return name_en
+        return f'{escape(name_cn)} <span style="opacity:.7;font-weight:500;font-size:13px;">{escape(name_en)}</span>'
+    return escape(name_en)
 
 
 def sector_page_title(code: str, name_en: str, name_cn: str) -> str:

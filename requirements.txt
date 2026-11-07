@@ -1,7 +1,9 @@
-streamlit>=1.32
-streamlit-autorefresh>=1.0
-requests>=2.31
-yfinance>=0.2.40
-pandas>=2.0
-numpy>=1.26
-python-dotenv>=1.0
+# Bounded ranges: tested combination is noted on the right. Upper bounds stop a
+# future major release from silently breaking the app on a fresh install.
+streamlit>=1.37,<2        # tested 1.67.0 (st.fragment(run_every) needs >=1.37)
+requests>=2.31,<3         # tested 2.34.2
+yfinance>=0.2.40,<2       # tested 1.8.0
+pandas>=2.0,<4            # tested 3.0.5
+numpy>=1.26,<3            # tested 2.5.3
+python-dotenv>=1.0,<2     # tested 1.2.3
+tzdata>=2024.1            # zoneinfo database on Windows (market-hours logic)

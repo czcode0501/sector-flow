@@ -1,0 +1,10 @@
+# Bind to loopback so the dashboard (no login, uses your Finnhub key) is not
+# exposed to everyone on the same network. Change only if you put it behind
+# your own authentication / reverse proxy.
+[server]
+address = "127.0.0.1"
+enableXsrfProtection = true
+enableCORS = true
+
+[browser]
+gatherUsageStats = false

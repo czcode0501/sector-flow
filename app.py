@@ -1,4 +1,6 @@
+import math
 from datetime import datetime
+from html import escape
 
 import streamlit as st
 
@@ -7,6 +9,7 @@ from data import (
     fetch_metrics_map,
     fetch_profiles,
     fetch_quotes,
+    normalize_symbol,
     search_stock,
 )
 from i18n import LANGUAGES, sector_display_html, sector_page_title, t
@@ -254,6 +257,8 @@ def fmt_dollar_signed(v: float | None) -> str:
 def fmt_ratio(v: float | None) -> str:
     if v is None:
         return "—"
+    if math.isinf(v):
+        return "∞"
     return f"{v:.2f}x"
 
 
@@ -298,6 +303,8 @@ def _metric_cell(v, kind: str) -> str:
         return f'<div class="cell {cls}">{fmt_dollar_signed(v)}</div>'
     if kind == "ratio":
         cls = "pos" if v > 1 else ("neg" if v < 1 else "neu")
+        if math.isinf(v):
+            return f'<div class="cell {cls}" title="no down days">∞</div>'
         return f'<div class="cell {cls}">{v:.2f}x</div>'
     if kind == "clv":
         cls = "pos" if v > 0.5 else ("neg" if v < 0.5 else "neu")
@@ -305,7 +312,7 @@ def _metric_cell(v, kind: str) -> str:
     if kind == "mfi":
         cls = "pos" if v > 50 else ("neg" if v < 50 else "neu")
         return f'<div class="cell {cls}">{v:.0f}</div>'
-    return f'<div class="cell neu">{v}</div>'
+    return f'<div class="cell neu">{escape(str(v))}</div>'
 
 
 def render_metrics_table_html(metrics: dict | None, live_change_1d: float | None = None) -> str:
@@ -348,7 +355,7 @@ def _period_cells_html(vals: dict[int, float], cell_cls: str = "item") -> str:
 
 
 def render_search_result(r: dict) -> str:
-    sym = r["symbol"]
+    sym = escape(r["symbol"])
     q = r["quote"]
     p = r["profile"]
     changes = r["period_changes"]
@@ -357,7 +364,7 @@ def render_search_result(r: dict) -> str:
     change_1d = changes.get(1) if q is None else q.change_pct
     bg = color_for(change_1d)
     price = f"${q.price:,.2f}" if q else "—"
-    name = p.name if p else sym
+    name = escape(p.name) if p else sym
     mcap = fmt_mcap(p.market_cap if p else None)
     table_html = render_metrics_table_html(metrics, live_change_1d=change_1d)
 
@@ -406,12 +413,16 @@ def render_main():
         st.button(t("search_btn"), use_container_width=True, key="search_btn")
 
     if ticker and ticker.strip():
-        sym_up = ticker.strip().upper()
-        with st.spinner(t("search_spinner", sym=sym_up)):
-            result = search_stock(ticker.strip())
-        if result is None:
-            st.warning(t("search_not_found", sym=sym_up))
+        sym_up = normalize_symbol(ticker)
+        if sym_up is None:
+            st.warning(t("search_invalid"))
+            result = None
         else:
+            with st.spinner(t("search_spinner", sym=sym_up)):
+                result = search_stock(sym_up)
+            if result is None:
+                st.warning(t("search_not_found", sym=sym_up))
+        if result is not None:
             st.markdown(render_search_result(result), unsafe_allow_html=True)
 
     st.markdown("---")
@@ -473,7 +484,8 @@ def render_stock_card(sym: str, quote, profile, metrics: dict | None):
     change_pct = quote.change_pct if quote else None
     bg = color_for(change_pct)
     price = f"${quote.price:,.2f}" if quote else "—"
-    name = profile.name if profile else sym
+    name = escape(profile.name if profile else sym)
+    sym = escape(sym)
     mcap = fmt_mcap(profile.market_cap if profile else None)
 
     table_html = render_metrics_table_html(metrics, live_change_1d=change_pct)
@@ -550,6 +562,10 @@ def render_detail(sector_code: str):
         if not universe:
             st.error(t("no_stocks_data"))
             return
+
+        missing = [s for s in stocks if s not in quotes and s not in metrics_map]
+        if missing:
+            st.caption(t("missing_symbols", syms=", ".join(missing)))
 
         st.markdown(f'<div class="section-title">{t("sec_mcap")}</div>', unsafe_allow_html=True)
         top_mcap = sorted(universe, key=lambda x: x["mcap"], reverse=True)[:10]

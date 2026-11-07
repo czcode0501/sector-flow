@@ -7,7 +7,8 @@ import webbrowser
 from pathlib import Path
 
 PORT = 8501
-URL = f"http://localhost:{PORT}"
+HOST = "127.0.0.1"
+URL = f"http://{HOST}:{PORT}"
 HERE = Path(__file__).parent
 
 
@@ -30,6 +31,9 @@ def main() -> None:
             [
                 sys.executable, "-m", "streamlit", "run", "app.py",
                 "--server.headless=true",
+                # Only reachable from this machine — the app has no login and
+                # every visitor spends your Finnhub quota.
+                "--server.address", HOST,
                 "--server.port", str(PORT),
                 "--browser.gatherUsageStats=false",
             ],

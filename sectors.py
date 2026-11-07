@@ -14,6 +14,10 @@ SECTORS = [
 
 SECTOR_NAME = {code: (en, cn) for code, en, cn in SECTORS}
 
+# Constituent lists are a manual snapshot. Removed after M&A: MRO (-> COP, 2024),
+# HES (-> CVX, 2025), K (Kellanova -> Mars, 2025), IPG (-> OMC, 2025);
+# PARA renamed to PSKY (Paramount Skydance, 2025). Re-check periodically — the
+# sector page lists any ticker that returns no data.
 SECTOR_STOCKS: dict[str, list[str]] = {
     "XLK": [
         "NVDA", "MSFT", "AAPL", "AVGO", "ORCL", "CRM", "CSCO", "IBM", "AMD", "ACN",
@@ -38,12 +42,12 @@ SECTOR_STOCKS: dict[str, list[str]] = {
     "XLP": [
         "COST", "WMT", "PG", "KO", "PM", "PEP", "MO", "MDLZ", "CL", "TGT",
         "KMB", "KDP", "KVUE", "GIS", "KR", "SYY", "STZ", "CHD", "HSY", "MKC",
-        "ADM", "K", "TSN", "CLX", "CAG", "HRL", "SJM", "MNST", "DG", "DLTR",
+        "ADM", "BG", "TSN", "CLX", "CAG", "HRL", "SJM", "MNST", "DG", "DLTR",
     ],
     "XLE": [
         "XOM", "CVX", "COP", "EOG", "MPC", "WMB", "PSX", "SLB", "OKE", "VLO",
-        "KMI", "TRGP", "FANG", "HES", "BKR", "OXY", "DVN", "HAL", "EQT", "APA",
-        "TPL", "MRO",
+        "KMI", "TRGP", "FANG", "EXE", "BKR", "OXY", "DVN", "HAL", "EQT", "APA",
+        "TPL", "CTRA",
     ],
     "XLI": [
         "GE", "RTX", "HON", "UBER", "CAT", "BA", "UNP", "DE", "ETN", "LMT",
@@ -67,7 +71,7 @@ SECTOR_STOCKS: dict[str, list[str]] = {
     ],
     "XLC": [
         "META", "GOOGL", "GOOG", "NFLX", "DIS", "T", "VZ", "TMUS", "CMCSA", "CHTR",
-        "EA", "TTWO", "WBD", "LYV", "OMC", "IPG", "MTCH", "PARA", "NWS", "NWSA",
+        "EA", "TTWO", "WBD", "LYV", "OMC", "TKO", "MTCH", "PSKY", "NWS", "NWSA",
         "PINS", "FOX", "FOXA",
     ],
 }
